@@ -1,5 +1,5 @@
 from flask import Flask
-from flask import render_template, request
+from flask import render_template, request, redirect
 from flaskext.mysql import MySQL
 
 app = Flask(__name__)
@@ -48,7 +48,7 @@ def store():
     cursor.execute( sql, datos )
     conn.commit()
 
-    return render_template('empleados/index.html')
+    return redirect('/')
 
 
 if __name__ == '__main__':
