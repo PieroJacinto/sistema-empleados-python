@@ -1,1 +1,61 @@
-<h1>Hola Mundo soy la db de empleados</h1>
+<h1>Hola Mundo soy la db de empleados</h1><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Empleados Python</title>
+</head>
+<body>
+    <h1>Hola Flask</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Foto</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+            </tr>
+        </thead>
+        <tbody id="tablaEmpleados">
+
+        </tbody>
+    </table>
+            
+                <script>
+                    //const URL = "http://127.0.0.1:5000/"
+                    const URL = "https://pieroja.pythonanywhere.com/"
+            
+                    // Realizamos la solicitud GET al servidor para obtener todos los productos
+                    fetch(URL)
+                        .then(function (response) {
+                            if (response.ok) {
+                                return response.json(); // Parseamos la respuesta JSON
+                            } else {
+                                // Si hubo un error, lanzar explícitamente una excepción
+                                // para ser "catcheada" más adelante
+                                throw new Error('Error al obtener los productos.');
+                            }
+                        })
+                        .then(function (data) {
+                            var tablaEmpleados = document.getElementById('tablaProductos');
+            
+                            // Iteramos sobre los productos y agregamos filas a la tabla
+                            data.forEach(function (producto) {
+                                var fila = document.createElement('tr');
+                                fila.innerHTML = '<td>' + producto.id + '</td>' +
+                                '<td>' + producto.nombre + '</td>' +
+                                    '<td>' + producto.correo + '</td>' +
+                                    '<td align="right">' + producto.foto + '</td>'                                    
+                                tablaProductos.appendChild(fila);
+                            });
+                        })
+                        .catch(function (error) {
+                            // Código para manejar errores
+                            alert('Error al obtener los productos.');
+                        });
+                </script>
+        </tbody>
+    </table>    
+</body>
+</html>
