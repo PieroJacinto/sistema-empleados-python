@@ -1,3 +1,4 @@
+{% include 'header.html' %}
 <form action="/store" method="POST" enctype="multipart/form-data">
     <label for="txtNombre">Nombre</label>
     <input type="text" name="txtNombre" id="txtNombre">
@@ -13,3 +14,4 @@
 
     <input type="submit" value="Agregar Nuevo Empleado">
 </form>
+{% include 'footer.html' %}
