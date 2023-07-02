@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-from flaskext.mysql import MySQL
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 
+from pymysql.cursors import DictCursor
+from flaskext.mysql import MySQL
 from datetime import datetime
 import os
+
 
 app = Flask(__name__)
 mysql = MySQL()
@@ -11,16 +13,17 @@ app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = ''
 app.config['MYSQL_DATABASE_DB'] = 'sistema'
+app.config['SECRET_KEY'] = 'losgatitossonlomejor'
 
-UPLOADS = os.path.join('uploads')
+UPLOADS = os.path.join('src/uploads')
 app.config['UPLOADS'] = UPLOADS
 
 mysql.init_app(app)
 
 conn = mysql.connect()
-cursor = conn.cursor()
+cursor = conn.cursor( cursor = DictCursor )
 
-def queryMySql( query, data = (), tipoDeRetorno = 'none' ):
+def queryMySql( query, data = None, tipoDeRetorno = 'none' ):
 
     if data != None:
         cursor.execute( query, data )
@@ -28,15 +31,13 @@ def queryMySql( query, data = (), tipoDeRetorno = 'none' ):
         cursor.execute(query)    
 
     if tipoDeRetorno == "one":
-        registro = cursor.fetchone()
-        conn.commit()
-        return registro
-    elif tipoDeRetorno == "all":
-        registro = cursor.fetchall()
-        conn.commit()
-        return registro
-    else:
-        conn.commit()    
+        registro = cursor.fetchone()      
+    else:        
+        registro = cursor.fetchall()     
+
+    if query.casefold().find("select") != -1:
+        conn.commit() 
+    return registro   
 
 @app.route('/fotodeusuario/<path:nombreFoto>')
 def fotodeusuario(nombreFoto):
@@ -49,31 +50,32 @@ def index():
 
     return render_template( 'empleados/index.html', empleados = empleados )
 
-@app.route('/create')
-def create():
+@app.route('/empleado/crear', methods=["GET", "POST"])
+def alta_empleado():
+    if request.method == "GET":
+        return render_template('empleados/create.html')
+    elif request.method== "POST":  
+        _nombre = request.form['txtNombre']      
+        _correo = request.form['txtCorreo'] 
+        _foto = request.files['txtFoto']
 
-    return render_template('empleados/create.html')
+        if _nombre == '' or _correo == '':
+            flash('El nombre y el correo son obligatorios')
+            return redirect(url_for('alta_empleado'))
 
-@app.route('/store', methods=['POST'])
-def store():
-  
-    _nombre = request.form['txtNombre']      
-    _correo = request.form['txtCorreo'] 
-    _foto = request.files['txtFoto']
+        now = datetime.now()
+        tiempo = now.strftime("%Y%H%M%S")
 
-    now = datetime.now()
-    tiempo = now.strftime("%Y%H%M%S")
+        if _foto != "":
+            nuevoNombreFoto = tiempo + '_' + _foto.filename
+            _foto.save("src/uploads/" + nuevoNombreFoto)
 
-    if _foto != "":
-        nuevoNombreFoto = tiempo + '_' + _foto.filename
-        _foto.save("uploads/" + nuevoNombreFoto)
+        sql = "insert INTO EMPLEADOS (nombre, correo, foto) values (%s,%s,%s);"
+        datos = ( _nombre, _correo, nuevoNombreFoto )
 
-    sql = "insert INTO EMPLEADOS (nombre, correo, foto) values (%s,%s,%s);"
-    datos = ( _nombre, _correo, nuevoNombreFoto )
+        queryMySql(sql, datos)
 
-    queryMySql(sql, datos)
-
-    return redirect('/')
+        return redirect('/')
 
 @app.route('/delete/<int:id>')
 def delete(id):
@@ -81,7 +83,7 @@ def delete(id):
     sql = 'SELECT foto FROM empleados WHERE id = (%s)'
     datos = (id,)
     nombreFoto = queryMySql(sql, datos, 'one')
-    
+
     try:
         os.remove(os.path.join(app.config['UPLOADS'], nombreFoto[0]))
     except:
@@ -115,17 +117,19 @@ def update():
         now = datetime.now()
         tiempo = now.strftime("%Y%H%M%S")
         nuevoNombreFoto = tiempo + '_' + _foto.filename
-        _foto.save("uploads/" + nuevoNombreFoto)
+        _foto.save("src/uploads/" + nuevoNombreFoto)
 
         sql =f'SELECT foto FROM empleados WHERE id="{id}";'
         cursor.execute(sql)
         conn.commit()
         
-        nombreFoto = cursor.fetchone()[0]
-        borrarEstaFoto = os.path.join(app.config['UPLOADS'], nombreFoto)
+        nombreFoto = cursor.fetchone()
+        print("------------------------nombre")
+        print("-----Foto-----", nombreFoto["foto"] )
+        borrarEstaFoto = os.path.join(app.config['UPLOADS'], nombreFoto["foto"])
         print(borrarEstaFoto)
         try:
-            os.remove(os.path.join(app.config['UPLOADS'], nombreFoto))
+            os.remove(os.path.join(app.config['UPLOADS'], nombreFoto["foto"]))
         except:
             pass
 
